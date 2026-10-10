@@ -45,10 +45,7 @@ Pinned experiment dependencies and exact run commands will accompany the baselin
 
 ## Next contribution
 
-Implement authorized individual issuance, verification and revocation, then test
-valid, altered, unknown and revoked credentials and unauthorized calls. See the
-acceptance criteria in `docs/TEAM_PLAN.md`. Do not import the advanced prototype as
-if it were already understood and validated by the team.
+We gonna find out.
 
 ## Contributions and attribution
 
