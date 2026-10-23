@@ -11,3 +11,8 @@ node_modules/
 *.toc
 *.synctex.gz
 .DS_Store
+out/
+cache/
+*.key
+*.pem
+credential-package.json

@@ -1,0 +1,51 @@
+{
+  "created_utc": "2026-09-30T19:41:10.623987+00:00",
+  "seed": 42,
+  "sizes": [
+    1,
+    8,
+    32,
+    128
+  ],
+  "repeats": 3,
+  "queries": 20,
+  "backend": "EthereumTester/PyEVM",
+  "platform": "Linux-6.18.44-x86_64-with-glibc2.39",
+  "python": "3.12.14",
+  "compiler": "0.8.24+commit.e11b9ed9.Emscripten.clang",
+  "compiler_settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "evmVersion": "shanghai",
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode.object",
+          "evm.deployedBytecode.object"
+        ]
+      }
+    }
+  },
+  "packages": {
+    "web3": "7.13.0",
+    "eth-tester": "0.13.0b1",
+    "py-evm": "0.12.1b1",
+    "numpy": "2.2.6"
+  },
+  "source_sha256": {
+    "src/__init__.py": "a3e759305fad5349abf807a1bfe5655d0d0e65aa23d6403511f059f28f425e07",
+    "src/benchmark.py": "fdcaf772c7a0056766c5bb868dab6e8ddcea6267e102702b06912465cc6d72ab",
+    "src/chain.py": "27a5f29373450c3ebc8ae0aa0d2217769aded1c0935c3e152bf5c88f42b850a2",
+    "src/cli.py": "50eb43cbcafe779630e0797bfec51b7903feb9bbee4d0576a434cfcb269e2082",
+    "src/contracts/BatchCredentialRegistry.sol": "36fd365be6434c38028e7eabffeb25be59c2382544f6fcadde473158276a7344",
+    "src/contracts/CredentialRegistry.sol": "4aa19ca1a5f2eb5908dcb7a144499f5b53354bc47e645b0d1e1146a1dfd0ecae",
+    "src/contracts/IssuerAuthority.sol": "585a7b4552f948851468ba23a551dd99e7e123b4ccde49f0c71ea47b8188c4b5",
+    "src/credentials.py": "4d63cc251971a0c810a8226409bca035f0bd1e9fafb3a80f8106d086e5e5a529",
+    "src/demo.py": "6b3e78df4179831c2cc44581812c2256d3844688464086233b9d011b4f7a11d4",
+    "src/generate_figures.py": "f9d34207d1099f3caac6fab2031c9d03d4284d95fb3d5032116b4dd02efa239f"
+  },
+  "csv_sha256": "b57071fe4174b13a3fcaff2363ea42d8cbe382ca9f61056b7c858b6a2f64f8ea"
+}
