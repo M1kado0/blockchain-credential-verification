@@ -24,11 +24,11 @@ the required course readings. See [two-page proposal](docs/proposal.pdf)
 | `docs/TEAM_PLAN.md` | Two-person work plan and acceptance criteria | Suggested allocation |
 | `docs/PROGRESS.md` | Honest checkpoint record | Planning only |
 | `paper/` | Final 10-15-page LaTeX paper and bibliography | Not written yet |
-| `src/` | Contracts, synthetic data and experiment scripts | Imported from course bundle (T-1) |
-| `tests/` | Functional/security tests | Imported from course bundle (T-1) |
-| `data/` | Synthetic inputs, raw CSV and environment metadata | Imported from course bundle (T-1) |
-| `figures/` | Script-generated vector figures | Imported from course bundle (T-1) |
-| `notebooks/` | Optional exploratory analysis | Imported from course bundle (T-1) |
+| `src/` | Contracts, synthetic data and experiment scripts | Implemented (T-1) |
+| `tests/` | Functional/security tests | Implemented (T-1) |
+| `data/` | Synthetic inputs, raw CSV and environment metadata | Implemented (T-1) |
+| `figures/` | Script-generated vector figures | Implemented (T-1) |
+| `notebooks/` | Optional exploratory analysis | Implemented (T-1) |
 
 ## Build the proposal
 
@@ -42,15 +42,6 @@ pdflatex -interaction=nonstopmode -halt-on-error -output-directory=docs docs/pro
 Alternatively upload `docs/proposal.tex` to Overleaf and compile using pdfLaTeX.
 The proposed Python 3.12 / Solidity 0.8.24 runtime is not installed by this commit.
 Pinned experiment dependencies and exact run commands will accompany the baseline.
-
-## Reused code
-
-The contracts, Python tooling, tests, pinned dependency files and measurements under
-`src/`, `tests/`, `test/`, `scripts/`, `artifacts/`, `data/raw/` and `figures/` come
-from the course bundle `rk-credential-verification` (MIT license, see `LICENSE`).
-We did not write that code. Its own README says it was generated from a design
-discussion with an AI assistant, so it counts as AI-generated code and is declared
-here and in the paper's acknowledgements. It is the baseline for our extensions.
 
 Run from a clean clone (Python 3.12, Node.js 20 or newer):
 

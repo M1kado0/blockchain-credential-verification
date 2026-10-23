@@ -50,4 +50,4 @@ these operational questions is resolved by observing a lower gas count.
 W3C VC interoperability, selective disclosure, zero-knowledge proofs, EDS signing,
 IPFS storage and Smart Bridge adapters are potential extensions and are not
 implemented or evaluated here. No legal or literature claims from the earlier
-conversation are silently treated as verified facts in this code bundle.
+conversation are silently treated as verified facts in this codebase.

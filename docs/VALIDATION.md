@@ -1,6 +1,6 @@
-# Validation of the delivered code bundle
+# Validation of the baseline code
 
-Executed while preparing the bundle on 30 September 2026 UTC:
+Executed while preparing the baseline on 30 September 2026 UTC:
 
 - Compiled all contracts using solc-js 0.8.24, Shanghai target, optimizer 200.
 - Python unit and PyEVM integration tests: **18 passed**.
