@@ -19,7 +19,9 @@ does not claim to establish a previously unstudied research gap.
 - Twenty valid verification calls per method per repeat, after three warm-ups.
 - Both methods issue exactly the same set of credentials under the same issuer.
 - All valid generated credentials are checked; one byte-modified document and
-  one revoked credential are checked per method per repeat.
+  every revoked credential (k = floor(r * n), same seeded set for both methods)
+  are checked per method per repeat. A wrong outcome aborts the run before the
+  CSV is written.
 
 Deployment and issuer-authorization gas are excluded from issuance totals. These
 are amortized setup operations. Each method's authorization and deployment are
@@ -38,7 +40,10 @@ can change timestamps but timestamps are not used by these contracts.
 - Local verification duration: `perf_counter_ns` around one `eth_call`, milliseconds.
   Includes local provider/serialization/EVM overhead, excludes public network,
   finality, document hashing and off-chain proof retrieval.
-- Revocation gas: one individual credential's actual revoke transaction receipt.
+- Revocation gas: `revoke_total_gas` is the sum of the actual revoke transaction
+  receipts for the k revoked credentials, `revoke_mean_gas` is that sum divided
+  by k (0 when k is 0). `revocation_fraction` and `revoked_count` (k) are
+  recorded per row. These replace the earlier single-revocation `revoke_gas`.
   Batch-wide revocation cost is not measured by this experiment.
 - Proof bytes: number of 32-byte sibling hashes, excluding ABI overhead.
 - Tree construction time: leaves + complete Merkle tree, milliseconds.

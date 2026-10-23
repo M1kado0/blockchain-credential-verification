@@ -49,7 +49,7 @@ def main():
     for (method, size), group in sorted(groups.items()):
         record = {'method': method, 'batch_size': size, 'repeats': len(group)}
         for metric in ['issue_total_gas', 'issue_gas_per_credential', 'verify_estimate_gas',
-                       'verify_call_median_ms', 'revoke_gas', 'proof_bytes']:
+                       'verify_call_median_ms', 'revoke_mean_gas', 'proof_bytes']:
             record[metric + '_mean'] = statistics.mean(float(r[metric]) for r in group)
         summary.append(record)
     with (args.output / 'summary.csv').open('w', newline='') as f:
