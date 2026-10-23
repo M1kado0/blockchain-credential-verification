@@ -45,6 +45,19 @@ def test_revocation_gas_fields(rows):
         assert int(r['revoked_rejected']) == k
 
 
+def test_write_gas_per_credential_recomputed_from_raw_columns(rows):
+    for r in rows:
+        expected = (int(r['issue_total_gas']) + int(r['revoke_total_gas'])) / int(r['batch_size'])
+        assert float(r['write_gas_per_credential']) == expected
+
+
+def test_setup_gas_is_recorded_separately_per_method(rows):
+    for r in rows:
+        assert int(r['deploy_gas']) > 0 and int(r['authorize_gas']) > 0
+    for method in ('individual', 'merkle_batch'):
+        assert len({(r['deploy_gas'], r['authorize_gas']) for r in rows if r['method'] == method}) == 1
+
+
 def test_wrong_outcome_aborts_before_csv(tmp_path, monkeypatch):
     real = benchmark.transact
 

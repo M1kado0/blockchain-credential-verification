@@ -45,6 +45,13 @@ can change timestamps but timestamps are not used by these contracts.
   by k (0 when k is 0). `revocation_fraction` and `revoked_count` (k) are
   recorded per row. These replace the earlier single-revocation `revoke_gas`.
   Batch-wide revocation cost is not measured by this experiment.
+- Write cost per credential: `write_gas_per_credential` is
+  C_write(n, k) = (`issue_total_gas` + `revoke_total_gas`) / n, where n is the
+  batch size and k the revoked count. It is computed from the two raw gas columns
+  and is exact for every row.
+- Setup gas: `deploy_gas` (contract deployment receipt) and `authorize_gas`
+  (the admin's `setIssuer` receipt) are recorded per method in their own columns.
+  They are never added into `issue_total_gas` or C_write.
 - Proof bytes: number of 32-byte sibling hashes, excluding ABI overhead.
 - Tree construction time: leaves + complete Merkle tree, milliseconds.
 

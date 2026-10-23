@@ -33,11 +33,19 @@ def deploy(w3, name, admin):
     return w3.eth.contract(address=receipt.contractAddress, abi=a["abi"]), receipt
 
 
-def setup():
+def setup_with_gas():
+    """Like setup(), plus per-method deployment and issuer-authorization gas."""
     w3 = local_chain()
     admin, issuer, attacker = w3.eth.accounts[:3]
-    single, _ = deploy(w3, "CredentialRegistry", admin)
-    batch, _ = deploy(w3, "BatchCredentialRegistry", admin)
-    for contract in (single, batch):
-        transact(w3, contract.functions.setIssuer(issuer, True), admin)
-    return w3, admin, issuer, attacker, single, batch
+    single, single_deploy = deploy(w3, "CredentialRegistry", admin)
+    batch, batch_deploy = deploy(w3, "BatchCredentialRegistry", admin)
+    gas = {}
+    for method, contract, deployed in (("individual", single, single_deploy),
+                                       ("merkle_batch", batch, batch_deploy)):
+        authorized = transact(w3, contract.functions.setIssuer(issuer, True), admin)
+        gas[method] = {"deploy_gas": deployed.gasUsed, "authorize_gas": authorized.gasUsed}
+    return w3, admin, issuer, attacker, single, batch, gas
+
+
+def setup():
+    return setup_with_gas()[:6]

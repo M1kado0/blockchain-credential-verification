@@ -17,7 +17,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
-from .chain import ROOT, setup, transact, artifact
+from .chain import ROOT, setup_with_gas, transact, artifact
 from .credentials import commitment, leaf, MerkleTree
 
 
@@ -42,7 +42,7 @@ def run(sizes, fractions, repeats, queries, seed, output):
     for n, fraction in itertools.product(sizes, fractions):
         k = math.floor(fraction * n + 1e-9)  # guard float error, e.g. 0.29 * 100
         for repeat in range(repeats):
-            w3, admin, issuer, attacker, single, batch = setup()
+            w3, admin, issuer, attacker, single, batch, setup_gas = setup_with_gas()
             batch_id = rng.randbytes(32)
             ids = [rng.randbytes(32) for _ in range(n)]
             salts = [rng.randbytes(32) for _ in range(n)]
@@ -107,6 +107,9 @@ def run(sizes, fractions, repeats, queries, seed, output):
                     "verify_queries": queries, "revocation_fraction": fraction, "revoked_count": k,
                     "revoke_total_gas": revoke_total_gas,
                     "revoke_mean_gas": revoke_total_gas / k if k else 0,
+                    "write_gas_per_credential": (gas + revoke_total_gas) / n,
+                    "deploy_gas": setup_gas[method]["deploy_gas"],
+                    "authorize_gas": setup_gas[method]["authorize_gas"],
                     "tree_build_ms": 0 if method == "individual" else tree_build_ms,
                     "valid_checked": n, "tampered_rejected": 1, "revoked_rejected": k})
             print(f"completed n={n}, repeat={repeat + 1}/{repeats}", flush=True)
