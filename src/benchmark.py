@@ -13,12 +13,26 @@ import math
 import platform
 import random
 import statistics
+import subprocess
 import time
 from datetime import datetime, timezone
 from pathlib import Path
 import numpy as np
 from .chain import ROOT, setup_with_gas, transact, artifact
 from .credentials import commitment, leaf, MerkleTree
+
+
+DEFAULT_SIZES = [1, 3, 7, 8, 31, 32, 127, 128, 512]
+DEFAULT_FRACTIONS = [0.0, 0.01, 0.10, 0.50]
+DEFAULT_REPEATS = 5
+
+
+def git_revision():
+    try:
+        return subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=ROOT, text=True,
+                                       stderr=subprocess.DEVNULL).strip()
+    except (OSError, subprocess.CalledProcessError):
+        return 'unknown'
 
 
 def expect(condition, message):
@@ -39,7 +53,8 @@ def run(sizes, fractions, repeats, queries, seed, output):
     np.random.seed(seed)
     rng = random.Random(seed)
     rows = []
-    for n, fraction in itertools.product(sizes, fractions):
+    configs = list(itertools.product(sizes, fractions))
+    for index, (n, fraction) in enumerate(configs, 1):
         k = math.floor(fraction * n + 1e-9)  # guard float error, e.g. 0.29 * 100
         for repeat in range(repeats):
             w3, admin, issuer, attacker, single, batch, setup_gas = setup_with_gas()
@@ -112,7 +127,7 @@ def run(sizes, fractions, repeats, queries, seed, output):
                     "authorize_gas": setup_gas[method]["authorize_gas"],
                     "tree_build_ms": 0 if method == "individual" else tree_build_ms,
                     "valid_checked": n, "tampered_rejected": 1, "revoked_rejected": k})
-            print(f"completed n={n}, repeat={repeat + 1}/{repeats}", flush=True)
+        print(f"completed n={n}, fraction={fraction} ({index}/{len(configs)})", flush=True)
     output.parent.mkdir(parents=True, exist_ok=True)
     with output.open('w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=list(rows[0]))
@@ -126,15 +141,16 @@ def run(sizes, fractions, repeats, queries, seed, output):
         "packages": {k: importlib.metadata.version(k) for k in ['web3', 'eth-tester', 'py-evm', 'numpy']},
         "source_sha256": {str(p.relative_to(ROOT)): hashlib.sha256(p.read_bytes()).hexdigest()
             for p in sorted((ROOT / 'src').rglob('*')) if p.suffix in ['.py', '.sol']},
+        "git_revision": git_revision(),
         "csv_sha256": hashlib.sha256(output.read_bytes()).hexdigest()}
     output.with_suffix('.metadata.json').write_text(json.dumps(metadata, indent=2))
 
 
 def main():
     p = argparse.ArgumentParser(description=__doc__)
-    p.add_argument('--sizes', nargs='+', type=int, default=[1, 8, 32, 128])
-    p.add_argument('--fractions', nargs='+', type=float, default=[0.1])
-    p.add_argument('--repeats', type=int, default=3)
+    p.add_argument('--sizes', nargs='+', type=int, default=DEFAULT_SIZES)
+    p.add_argument('--fractions', nargs='+', type=float, default=DEFAULT_FRACTIONS)
+    p.add_argument('--repeats', type=int, default=DEFAULT_REPEATS)
     p.add_argument('--queries', type=int, default=20)
     p.add_argument('--seed', type=int, default=42)
     p.add_argument('--output', type=Path, default=ROOT / 'data/raw/benchmark.csv')

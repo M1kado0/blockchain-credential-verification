@@ -88,3 +88,58 @@ def test_run_rejects_invalid_arguments_directly(tmp_path):
     for args in ([[0], [0.1], 1, 1], [[3], [2.0], 1, 1], [[3], [0.1], 0, 1]):
         with pytest.raises(ValueError):
             benchmark.run(*args, 42, tmp_path / 'x.csv')
+
+
+GAS_COLUMNS = ['issue_total_gas', 'issue_gas_per_credential', 'issue_calldata_bytes',
+               'verify_estimate_gas', 'revoke_total_gas', 'write_gas_per_credential',
+               'deploy_gas', 'authorize_gas']
+
+
+def test_defaults_equal_proposal_workload(monkeypatch, tmp_path):
+    captured = {}
+    monkeypatch.setattr(benchmark, 'run', lambda *a: captured.update(args=a))
+    monkeypatch.setattr('sys.argv', ['benchmark', '--output', str(tmp_path / 'x.csv')])
+    benchmark.main()
+    sizes, fractions, repeats, queries, seed, _ = captured['args']
+    assert sizes == [1, 3, 7, 8, 31, 32, 127, 128, 512]
+    assert fractions == [0.0, 0.01, 0.10, 0.50]
+    assert repeats == 5 and seed == 42
+
+
+def test_cli_overrides_give_expected_row_count(tmp_path, monkeypatch):
+    out = tmp_path / 'b.csv'
+    monkeypatch.setattr('sys.argv', ['benchmark', '--output', str(out), '--sizes', '1', '3',
+                                     '--fractions', '0', '0.5', '--repeats', '2', '--queries', '1'])
+    benchmark.main()
+    assert len(read_rows(out)) == 2 * 2 * 2 * 2
+
+
+def test_same_seed_gives_identical_gas_columns(tmp_path):
+    outs = []
+    for name in ('a', 'b'):
+        out = tmp_path / f'{name}.csv'
+        benchmark.run([3], [0.5], 2, 1, 42, out)
+        outs.append([[r[c] for c in GAS_COLUMNS] for r in read_rows(out)])
+    assert outs[0] == outs[1]
+
+
+def test_progress_printed_per_configuration(tmp_path, capsys):
+    benchmark.run([1, 3], [0.0, 0.5], 1, 1, 42, tmp_path / 'p.csv')
+    lines = [l for l in capsys.readouterr().out.splitlines() if l.startswith('completed')]
+    assert len(lines) == 4
+    assert '1/4' in lines[0] and '4/4' in lines[-1]
+
+
+def test_metadata_has_every_required_field(tmp_path):
+    import hashlib
+    import json
+    import subprocess
+    out = tmp_path / 'm.csv'
+    benchmark.run([1], [0.0], 1, 1, 42, out)
+    meta = json.loads(out.with_suffix('.metadata.json').read_text())
+    for key in ['seed', 'sizes', 'fractions', 'repeats', 'queries', 'compiler_settings',
+                'packages', 'platform', 'source_sha256', 'git_revision', 'csv_sha256']:
+        assert key in meta, key
+    head = subprocess.check_output(['git', 'rev-parse', 'HEAD'], cwd=benchmark.ROOT, text=True).strip()
+    assert meta['git_revision'] == head
+    assert meta['csv_sha256'] == hashlib.sha256(out.read_bytes()).hexdigest()
