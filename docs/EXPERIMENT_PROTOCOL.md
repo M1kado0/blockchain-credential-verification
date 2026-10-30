@@ -57,10 +57,18 @@ can change timestamps but timestamps are not used by these contracts.
 
 ## Figure and table definitions, established before the experiment
 
-**Table 1.** Individual and Merkle-batch credential registration on a local EVM.
-For each batch size, report mean total issuance gas (gas units), mean issuance gas
-per credential (gas units), mean simulated verification transaction estimate (gas
-units), mean individual revocation gas (gas units), and proof size (bytes).
+**Table 1.** Individual versus batch registration by n and actual k: issuance
+gas per credential, revocation gas, verification gas estimate and proof bytes;
+mean and sample standard deviation over repeats. One row per method, batch size
+n and revoked count k. Columns: `issue_gas_per_credential`, `revoke_total_gas`
+(all k revocations), `revoke_mean_gas` (per revocation), `verify_estimate_gas`
+and `proof_bytes`, each as `_mean` and `_std` in gas units or bytes, rounded to
+one decimal. `_std` is the sample standard deviation (n - 1 denominator) over
+the rows in the group and is 0 for a single row. `revoke_mean_gas` is blank when
+k = 0 because no revocation happened. Fractions that give the same k (for
+example r = 0 and r = 0.01 at n = 8) share one row, so a row can pool more than
+five repeats: `repeats` counts the pooled rows and `revocation_fractions` lists
+the fractions pooled.
 Generated from `data/raw/benchmark.csv` by `src/generate_figures.py` as
 `figures/summary.csv`. Precision/recall are not reported: the synthetic lifecycle
 checks are functional assertions, not a labeled fraud-detection dataset.

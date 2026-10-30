@@ -9,6 +9,15 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from .chain import ROOT
 
+# Table 1 columns fixed in the Stage 3 proposal, summarized by method, n and actual k.
+TABLE_METRICS = ['issue_gas_per_credential', 'revoke_total_gas', 'revoke_mean_gas',
+                 'verify_estimate_gas', 'proof_bytes']
+
+
+def sample_std(values):
+    """Sample standard deviation (n - 1 denominator); zero for a single value."""
+    return statistics.stdev(values) if len(values) > 1 else 0.0
+
 
 def main():
     p = argparse.ArgumentParser()
@@ -19,9 +28,9 @@ def main():
         rows = list(csv.DictReader(f))
     if not rows:
         raise ValueError('empty benchmark CSV')
-    groups = defaultdict(list)
+    plot_groups = defaultdict(list)
     for row in rows:
-        groups[(row['method'], int(row['batch_size']))].append(row)
+        plot_groups[(row['method'], int(row['batch_size']))].append(row)
     args.output.mkdir(parents=True, exist_ok=True)
     plt.rcParams.update({'font.size': 10, 'pdf.fonttype': 42, 'ps.fonttype': 42})
     for metric, label, filename, log in [
@@ -30,10 +39,10 @@ def main():
         ('verify_call_median_ms', 'Local EVM eth_call duration (ms)', 'local_call_latency.pdf', False)]:
         fig, ax = plt.subplots(figsize=(6.2, 3.8))
         for method, title in [('individual', 'Individual registry'), ('merkle_batch', 'Merkle batch')]:
-            sizes = sorted(n for m, n in groups if m == method)
-            values = [[float(r[metric]) for r in groups[(method, n)]] for n in sizes]
+            sizes = sorted(n for m, n in plot_groups if m == method)
+            values = [[float(r[metric]) for r in plot_groups[(method, n)]] for n in sizes]
             ax.errorbar(sizes, [statistics.mean(v) for v in values],
-                        yerr=[statistics.stdev(v) if len(v) > 1 else 0 for v in values],
+                        yerr=[sample_std(v) for v in values],
                         marker='o', capsize=3, label=title)
         ax.set_xscale('log', base=2)
         if log:
@@ -45,12 +54,22 @@ def main():
         fig.tight_layout()
         fig.savefig(args.output / filename)
         plt.close(fig)
+    table_groups = defaultdict(list)
+    for row in rows:
+        table_groups[(row['method'], int(row['batch_size']), int(row['revoked_count']))].append(row)
     summary = []
-    for (method, size), group in sorted(groups.items()):
-        record = {'method': method, 'batch_size': size, 'repeats': len(group)}
-        for metric in ['issue_total_gas', 'issue_gas_per_credential', 'verify_estimate_gas',
-                       'verify_call_median_ms', 'revoke_mean_gas', 'proof_bytes']:
-            record[metric + '_mean'] = statistics.mean(float(r[metric]) for r in group)
+    for (method, size, k), group in sorted(table_groups.items()):
+        fractions = sorted({r['revocation_fraction'] for r in group}, key=float)
+        record = {'method': method, 'batch_size': size, 'revoked_count': k,
+                  'revocation_fractions': ';'.join(fractions), 'repeats': len(group)}
+        for metric in TABLE_METRICS:
+            if metric == 'revoke_mean_gas' and k == 0:
+                # Gas per revocation is undefined when nothing was revoked.
+                record[metric + '_mean'] = record[metric + '_std'] = ''
+                continue
+            values = [float(r[metric]) for r in group]
+            record[metric + '_mean'] = round(statistics.mean(values), 1)
+            record[metric + '_std'] = round(sample_std(values), 1)
         summary.append(record)
     with (args.output / 'summary.csv').open('w', newline='') as f:
         writer = csv.DictWriter(f, fieldnames=list(summary[0]))
