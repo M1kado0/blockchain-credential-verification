@@ -1,10 +1,12 @@
 import csv
+import matplotlib.pyplot as plt
 import pytest
 from src import generate_figures
 
 FIELDS = ['method', 'batch_size', 'repeat', 'revocation_fraction', 'revoked_count',
           'issue_gas_per_credential', 'revoke_total_gas', 'revoke_mean_gas',
-          'verify_estimate_gas', 'verify_call_median_ms', 'proof_bytes']
+          'verify_estimate_gas', 'verify_call_median_ms', 'proof_bytes',
+          'write_gas_per_credential']
 
 # method, n, r, k, repeat, issuance gas per credential, total revocation gas,
 # verification estimate, proof bytes
@@ -25,21 +27,25 @@ FIXTURE = [
 
 
 @pytest.fixture(scope='module')
-def summary(tmp_path_factory):
-    root = tmp_path_factory.mktemp('figures')
-    source = root / 'benchmark.csv'
-    with source.open('w', newline='') as f:
+def source(tmp_path_factory):
+    path = tmp_path_factory.mktemp('figures') / 'benchmark.csv'
+    with path.open('w', newline='') as f:
         writer = csv.writer(f)
         writer.writerow(FIELDS)
         for method, n, r, k, repeat, issue, revoke, verify, proof in FIXTURE:
             writer.writerow([method, n, repeat, r, k, issue, revoke, revoke / k if k else 0,
-                             verify, 1.5, proof])
-    out = root / 'out'
+                             verify, 1.5, proof, issue + revoke / n])
+    return path
+
+
+@pytest.fixture(scope='module')
+def summary(source):
+    out = source.parent / 'out'
     with pytest.MonkeyPatch.context() as mp:
         mp.setattr('sys.argv', ['generate_figures', '--input', str(source), '--output', str(out)])
         generate_figures.main()
-    for pdf in ('issuance_scaling.pdf', 'verification_gas.pdf', 'local_call_latency.pdf'):
-        assert (out / pdf).exists(), pdf
+    for pdf in ('write_gas.pdf', 'verification_gas.pdf', 'local_call_latency.pdf'):
+        assert (out / pdf).read_bytes().startswith(b'%PDF'), pdf
     with (out / 'summary.csv').open() as f:
         return {(r['method'], r['batch_size'], r['revoked_count']): r for r in csv.DictReader(f)}
 
@@ -89,3 +95,51 @@ def test_per_revocation_gas_is_blank_when_nothing_was_revoked(summary):
     none_revoked = summary[('merkle_batch', '8', '0')]
     assert none_revoked['revoke_mean_gas_mean'] == '' and none_revoked['revoke_mean_gas_std'] == ''
     assert none_revoked['revoke_total_gas_mean'] == '0.0'
+
+
+@pytest.fixture(scope='module')
+def write_gas_axes(source):
+    with source.open() as f:
+        fig = generate_figures.write_gas_figure(list(csv.DictReader(f)))
+    yield fig.axes[0]
+    plt.close(fig)
+
+
+def plotted_lines(ax):
+    """Legend label -> (batch sizes, means, error bar half-widths) of each errorbar line."""
+    result = {}
+    for container in ax.containers:
+        # An errorbar container holds the data line, the caps and the vertical bars.
+        line, _, (bars,) = container.lines
+        # Each bar is a segment from (x, mean - std) to (x, mean + std).
+        half_widths = [(top[1] - bottom[1]) / 2 for bottom, top in bars.get_segments()]
+        result[container.get_label()] = (list(line.get_xdata()), list(line.get_ydata()), half_widths)
+    return result
+
+
+def test_write_gas_axes_are_logarithmic_with_units(write_gas_axes):
+    # Units fixed by the Stage 3 caption for Figure 1.
+    assert write_gas_axes.get_xlabel() == 'Batch size (credential count)'
+    assert write_gas_axes.get_ylabel() == 'Write gas per credential (gas units)'
+    assert write_gas_axes.get_xscale() == 'log'
+    assert write_gas_axes.get_yscale() == 'log'
+
+
+def test_write_gas_has_one_line_per_method_and_fraction(write_gas_axes):
+    legend = [t.get_text() for t in write_gas_axes.get_legend().get_texts()]
+    assert sorted(legend) == sorted([
+        'Individual registry, r = 0', 'Individual registry, r = 0.01',
+        'Individual registry, r = 0.5', 'Merkle batch, r = 0', 'Merkle batch, r = 0.01',
+        'Merkle batch, r = 0.5'])
+
+
+def test_write_gas_points_are_mean_and_sample_std_over_repeats(write_gas_axes):
+    sizes, means, errors = plotted_lines(write_gas_axes)['Individual registry, r = 0.5']
+    assert sizes == [3, 8]
+    # n = 3: one repeat, 73310 + 47600 / 3. n = 8: repeats 97108 and 97109.
+    assert means == pytest.approx([89176.667, 97108.5])
+    assert errors == pytest.approx([0.0, 0.7071], abs=1e-4)
+    sizes, means, errors = plotted_lines(write_gas_axes)['Merkle batch, r = 0']
+    # r = 0 and r = 0.01 stay separate lines even though both give k = 0 at n = 8.
+    assert (sizes, means) == ([8], [9162.5])
+    assert errors == pytest.approx([0.7071], abs=1e-4)

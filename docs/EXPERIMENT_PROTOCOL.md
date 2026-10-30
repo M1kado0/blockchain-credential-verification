@@ -73,15 +73,22 @@ Generated from `data/raw/benchmark.csv` by `src/generate_figures.py` as
 `figures/summary.csv`. Precision/recall are not reported: the synthetic lifecycle
 checks are functional assertions, not a labeled fraud-detection dataset.
 
-**Figure 1.** Issuance gas per credential versus credentials per batch.
-X: batch size, credential count, log2 scale. Y: gas units per credential, log scale.
-Lines: individual records and Merkle batching. Error bars: sample standard
-deviation across three fresh-deployment repeats, not confidence intervals.
-Script: `src/generate_figures.py`; output `figures/issuance_scaling.pdf`.
+**Figure 1.** Write gas per credential (gas units, vertical axis) against batch
+size (credential count, horizontal axis); method and revocation-fraction curves,
+with repeat variation.
+X: batch size n, log2 scale, ticks at the measured sizes. Y: C_write(n, k)
+(`write_gas_per_credential`), log scale. One line per method and revocation
+fraction r: colour and line style give the method, the hollow marker gives r.
+Points are the mean over repeats; error bars are the sample standard deviation
+(n - 1 denominator), not confidence intervals. Lines group by r, not by k, so
+r = 0 and r = 0.01 draw on top of each other wherever k = 0 (every n below 100).
+Script: `src/generate_figures.py`; output `figures/write_gas.pdf`. It replaces
+the earlier `figures/issuance_scaling.pdf`, which plotted issuance gas only.
 
 **Figure 2.** Simulated verification transaction gas versus batch size.
 X: credentials per batch, count, log2 scale. Y: `eth_estimateGas`, gas units,
-linear scale. Same lines/error bars as Figure 1. Script: `src/generate_figures.py`;
+linear scale. Lines: individual records and Merkle batching. Error bars: sample
+standard deviation over repeats. Script: `src/generate_figures.py`;
 output `figures/verification_gas.pdf`.
 
 **Supplementary Figure.** Local PyEVM verification call duration versus batch
